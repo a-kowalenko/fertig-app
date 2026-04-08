@@ -43,6 +43,17 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCheckForUpdates = async () => {
+    if (!window.electronAPI) return;
+    try {
+      setStatus({ type: 'success', message: 'Suche nach Updates...' });
+      await window.electronAPI.checkForUpdates(true);
+      setTimeout(() => setStatus(null), 3000);
+    } catch (e) {
+      setStatus({ type: 'error', message: 'Fehler bei der Update-Suche.' });
+    }
+  };
+
   if (loading) return <div>Laden...</div>;
 
   return (
@@ -86,6 +97,20 @@ export default function SettingsPage() {
         >
           Speichern
         </button>
+
+        <hr className="my-8 border-gray-200" />
+
+        <h3 className="text-xl font-bold mb-4 text-gray-800">App-Updates</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Hier können Sie manuell nach neuen Versionen suchen. Wenn Sie ein Update zuvor ignoriert haben, wird es Ihnen nun wieder angeboten.
+        </p>
+        <button
+          onClick={handleCheckForUpdates}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors"
+        >
+          Auf Updates prüfen
+        </button>
+
       </div>
 
       <div className="mt-12 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">

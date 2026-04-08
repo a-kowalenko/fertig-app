@@ -1,8 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electronAPI", {
-  getSettings: () => electron.ipcRenderer.invoke("get-settings"),
-  saveSettings: (path) => electron.ipcRenderer.invoke("save-settings", path),
-  selectDefaultPath: () => electron.ipcRenderer.invoke("select-default-path"),
-  selectFolderAndSave: (data) => electron.ipcRenderer.invoke("select-folder-and-save", data)
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{getSettings:()=>e.ipcRenderer.invoke("get-settings"),saveSettings:t=>e.ipcRenderer.invoke("save-settings",t),selectDefaultPath:()=>e.ipcRenderer.invoke("select-default-path"),selectFolderAndSave:t=>e.ipcRenderer.invoke("select-folder-and-save",t),checkForUpdates:t=>e.ipcRenderer.invoke("check-for-updates",t),downloadUpdate:()=>e.ipcRenderer.invoke("download-update"),installUpdate:()=>e.ipcRenderer.invoke("install-update"),skipUpdate:t=>e.ipcRenderer.invoke("skip-update",t),onUpdateEvent:t=>{e.ipcRenderer.on("update-event",(d,n)=>t(n))}});

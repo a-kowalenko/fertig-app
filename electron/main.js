@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import Store from 'electron-store';
+import { autoUpdater } from 'electron-updater';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +27,70 @@ app.whenReady().then(() => {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  // --- AutoUpdater ---
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  let isManualCheck = false;
+
+  autoUpdater.on('update-available', (info) => {
+    const skippedVersion = store.get('skippedUpdateVersion');
+    if (!isManualCheck && info.version === skippedVersion) return;
+    mainWindow.webContents.send('update-event', { type: 'update-available', info });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    if (isManualCheck) {
+      mainWindow.webContents.send('update-event', { type: 'update-not-available', info });
+    }
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    mainWindow.webContents.send('update-event', { type: 'download-progress', progress: progressObj });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow.webContents.send('update-event', { type: 'update-downloaded', info });
+  });
+
+  autoUpdater.on('error', (err) => {
+    mainWindow.webContents.send('update-event', { type: 'error', error: err.message });
+  });
+
+  // Initiale Prüfung im Hintergrund
+  setTimeout(() => {
+    isManualCheck = false;
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 3000);
+
   // --- IPC Handlers ---
+
+  ipcMain.handle('check-for-updates', async (event, isManual) => {
+    isManualCheck = isManual;
+    try {
+      await autoUpdater.checkForUpdates();
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('download-update', async () => {
+    try {
+      await autoUpdater.downloadUpdate();
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.handle('skip-update', (event, version) => {
+    store.set('skippedUpdateVersion', version);
+    return true;
+  });
 
   ipcMain.handle('get-settings', () => {
     return store.get('defaultPath', app.getPath('documents'));

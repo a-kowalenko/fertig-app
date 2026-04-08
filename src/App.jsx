@@ -2,11 +2,13 @@ import React from 'react';
 import { HashRouter, Routes, Route, NavLink } from 'react-router-dom';
 import FormPage from './pages/FormPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import UpdateModal from './components/UpdateModal.jsx';
 
 export default function App() {
   return (
     <HashRouter>
       <div className="min-h-screen bg-gray-50 flex flex-col items-center">
+        <UpdateModal />
         <header className="w-full bg-white shadow-sm border-b mb-8">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center px-4 pt-4">
             <h1 className="text-2xl font-bold text-gray-800 tracking-tight pb-4 md:pb-0">Fertig App</h1>
