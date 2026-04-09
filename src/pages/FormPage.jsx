@@ -119,7 +119,7 @@ export default function FormPage() {
           type="submit"
           className="w-full mt-4"
         >
-          Person anlegen
+          Kunde anlegen
         </Button>
       </form>
     </div>

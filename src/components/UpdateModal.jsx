@@ -87,8 +87,8 @@ export default function UpdateModal() {
               Eine neue Version ({updateInfo?.version}) ist verfügbar. Möchten Sie sie jetzt herunterladen?
             </p>
             <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={handleSkip}>
-                Version ignorieren
+              <Button variant="danger" onClick={handleSkip}>
+                Ignorieren
               </Button>
               <Button variant="secondary" onClick={handleClose}>
                 Später
