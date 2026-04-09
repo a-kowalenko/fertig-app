@@ -14,10 +14,10 @@ import electron, { app as app$1, BrowserWindow, ipcMain as ipcMain$1, dialog } f
 import path$m from "node:path";
 import fs$k from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 import process$1 from "node:process";
 import { promisify, isDeepStrictEqual } from "node:util";
 import fs$j from "node:fs";
-import crypto from "node:crypto";
 import assert$1 from "node:assert";
 import os$1 from "node:os";
 import "node:events";
@@ -30048,7 +30048,7 @@ const __dirname$1 = path$m.dirname(__filename$1);
 const store = new ElectronStore();
 app$1.whenReady().then(() => {
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 950,
     height: 800,
     autoHideMenuBar: true,
     webPreferences: {
@@ -30149,6 +30149,142 @@ app$1.whenReady().then(() => {
   });
   ipcMain$1.handle("get-settings", () => {
     return store.get("defaultPath", app$1.getPath("documents"));
+  });
+  ipcMain$1.handle("save-person", (event, data) => {
+    const persons = store.get("persons", []);
+    const newPerson = {
+      ...data,
+      id: crypto.randomUUID(),
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      processed: false
+    };
+    persons.unshift(newPerson);
+    store.set("persons", persons);
+    return { success: true };
+  });
+  ipcMain$1.handle("get-persons", () => {
+    return store.get("persons", []);
+  });
+  ipcMain$1.handle("update-person", (event, updatedPerson) => {
+    const persons = store.get("persons", []);
+    const index = persons.findIndex((p) => p.id === updatedPerson.id);
+    if (index === -1) {
+      return { success: false, error: "Kunde nicht gefunden" };
+    }
+    persons[index] = {
+      ...persons[index],
+      vorname: updatedPerson.vorname,
+      nachname: updatedPerson.nachname,
+      email: updatedPerson.email,
+      telefon: updatedPerson.telefon
+    };
+    store.set("persons", persons);
+    return { success: true };
+  });
+  ipcMain$1.handle("read-directory", async (event, dirPath) => {
+    try {
+      const targetPath = dirPath || store.get("defaultPath", app$1.getPath("documents"));
+      const entries = await fs$k.readdir(targetPath, { withFileTypes: true });
+      const folders = [];
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const fullPath = path$m.join(targetPath, entry.name);
+          let isReady = true;
+          try {
+            const files = await fs$k.readdir(fullPath, { withFileTypes: true });
+            const now = Date.now();
+            for (const f of files) {
+              if (f.isFile()) {
+                const s = await fs$k.stat(path$m.join(fullPath, f.name));
+                if (now - s.mtimeMs < 3e3) {
+                  isReady = false;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            isReady = false;
+          }
+          folders.push({ name: entry.name, path: fullPath, isReady });
+        }
+      }
+      return { success: true, path: targetPath, folders: folders.sort((a, b) => a.name.localeCompare(b.name)), parent: path$m.dirname(targetPath) };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+  ipcMain$1.handle("export-person-to-path", async (event, { id: id2, targetPath }) => {
+    const persons = store.get("persons", []);
+    const personIndex = persons.findIndex((p) => p.id === id2);
+    if (personIndex === -1) return { success: false, error: "Person nicht gefunden" };
+    const person = persons[personIndex];
+    const filePath = path$m.join(targetPath, "_fertig.txt");
+    try {
+      const exportData = {
+        vorname: person.vorname,
+        nachname: person.nachname,
+        email: person.email,
+        telefon: person.telefon
+      };
+      const content2 = JSON.stringify(exportData, null, 2);
+      await fs$k.writeFile(filePath, content2, "utf-8");
+      const history = store.get("history", []);
+      const newEntry = {
+        ...exportData,
+        filePath,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      history.unshift(newEntry);
+      store.set("history", history.slice(0, 100));
+      persons[personIndex].processed = true;
+      persons[personIndex].filePath = filePath;
+      store.set("persons", persons);
+      return { success: true, filePath };
+    } catch (error2) {
+      return { success: false, error: error2.message };
+    }
+  });
+  ipcMain$1.handle("export-person", async (event, id2) => {
+    const persons = store.get("persons", []);
+    const personIndex = persons.findIndex((p) => p.id === id2);
+    if (personIndex === -1) return { success: false, error: "Person nicht gefunden" };
+    const person = persons[personIndex];
+    const defaultPath = store.get("defaultPath", app$1.getPath("documents"));
+    const result = await dialog.showOpenDialog(mainWindow, {
+      defaultPath,
+      properties: ["openDirectory"],
+      title: "Bitte Zielordner auswählen",
+      buttonLabel: "Speichern unter"
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, error: "Abgebrochen" };
+    }
+    const selectedPath = result.filePaths[0];
+    const filePath = path$m.join(selectedPath, "_fertig.txt");
+    try {
+      const exportData = {
+        vorname: person.vorname,
+        nachname: person.nachname,
+        email: person.email,
+        telefon: person.telefon
+      };
+      const content2 = JSON.stringify(exportData, null, 2);
+      await fs$k.writeFile(filePath, content2, "utf-8");
+      const history = store.get("history", []);
+      const newEntry = {
+        ...exportData,
+        filePath,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      history.unshift(newEntry);
+      store.set("history", history.slice(0, 100));
+      persons[personIndex].processed = true;
+      persons[personIndex].filePath = filePath;
+      store.set("persons", persons);
+      return { success: true, filePath };
+    } catch (error2) {
+      return { success: false, error: error2.message };
+    }
   });
   ipcMain$1.handle("save-settings", (event, defaultPath) => {
     store.set("defaultPath", defaultPath);

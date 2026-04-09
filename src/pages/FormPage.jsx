@@ -25,15 +25,12 @@ export default function FormPage() {
       }
 
       if (window.electronAPI) {
-        // Optionale Loading-Toast für längeres Warten (Dialog) auskommentiert, da Dialog systemnativ ist.
-        const result = await window.electronAPI.selectFolderAndSave(payload);
+        const result = await window.electronAPI.savePerson(payload);
         if (result.success) {
-          toast.success(`Erfolgreich gespeichert in:\n${result.filePath}`, { duration: 4000 });
+          toast.success('Person erfolgreich zur Warteschlange hinzugefügt!');
           reset();
         } else {
-          if (result.error !== 'Abgebrochen') {
-            toast.error(`Fehler: ${result.error}`);
-          }
+          toast.error(`Fehler beim Hinzufügen der Person`);
         }
       } else {
         toast.error('Electron API nicht verfügbar. (Browser Modus?)');
@@ -121,7 +118,7 @@ export default function FormPage() {
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded mt-4 transition-colors"
         >
-          Ordner auswählen & Speichern
+          Person anlegen
         </button>
       </form>
     </div>

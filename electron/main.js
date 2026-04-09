@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 
@@ -12,7 +13,7 @@ const store = new Store();
 
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 950,
     height: 800,
     autoHideMenuBar: true,
     webPreferences: {
@@ -134,6 +135,170 @@ app.whenReady().then(() => {
     return store.get('defaultPath', app.getPath('documents'));
   });
 
+  ipcMain.handle('save-person', (event, data) => {
+    const persons = store.get('persons', []);
+    const newPerson = {
+      ...data,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      processed: false
+    };
+    persons.unshift(newPerson);
+    store.set('persons', persons);
+    return { success: true };
+  });
+
+  ipcMain.handle('get-persons', () => {
+    return store.get('persons', []);
+  });
+
+  ipcMain.handle('update-person', (event, updatedPerson) => {
+    const persons = store.get('persons', []);
+    const index = persons.findIndex((p) => p.id === updatedPerson.id);
+    if (index === -1) {
+      return { success: false, error: 'Kunde nicht gefunden' };
+    }
+
+    persons[index] = {
+      ...persons[index],
+      vorname: updatedPerson.vorname,
+      nachname: updatedPerson.nachname,
+      email: updatedPerson.email,
+      telefon: updatedPerson.telefon,
+    };
+
+    store.set('persons', persons);
+    return { success: true };
+  });
+
+  // Neue API für Dateisystem
+  ipcMain.handle('read-directory', async (event, dirPath) => {
+    try {
+      const targetPath = dirPath || store.get('defaultPath', app.getPath('documents'));
+      const entries = await fs.readdir(targetPath, { withFileTypes: true });
+
+      const folders = [];
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const fullPath = path.join(targetPath, entry.name);
+          // Check ob Kopiervorgang aktiv ist (hier sehr simpel: checken ob Dateien kürzlich (letzte 2s) geändert wurden,
+          // besser wäre noch ein lock-check, aber für eine generische Lösung reicht oft das Änderungsdatum)
+          let isReady = true;
+          try {
+            const files = await fs.readdir(fullPath, { withFileTypes: true });
+            const now = Date.now();
+            for (const f of files) {
+              if (f.isFile()) {
+                const s = await fs.stat(path.join(fullPath, f.name));
+                // Wenn letze Änderung jünger als 3 Sekunden ist -> wir nehmen an, Kopiervorgang aktiv
+                if (now - s.mtimeMs < 3000) {
+                  isReady = false;
+                  break;
+                }
+              }
+            }
+          } catch(e) {
+            // Zugriffsfehler -> vermutlich nicht ready
+            isReady = false;
+          }
+          folders.push({ name: entry.name, path: fullPath, isReady });
+        }
+      }
+
+      return { success: true, path: targetPath, folders: folders.sort((a,b) => a.name.localeCompare(b.name)), parent: path.dirname(targetPath) };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('export-person-to-path', async (event, { id, targetPath }) => {
+    const persons = store.get('persons', []);
+    const personIndex = persons.findIndex(p => p.id === id);
+    if (personIndex === -1) return { success: false, error: 'Person nicht gefunden' };
+
+    const person = persons[personIndex];
+    const filePath = path.join(targetPath, '_fertig.txt');
+
+    try {
+      const exportData = {
+        vorname: person.vorname,
+        nachname: person.nachname,
+        email: person.email,
+        telefon: person.telefon
+      };
+      const content = JSON.stringify(exportData, null, 2);
+      await fs.writeFile(filePath, content, 'utf-8');
+
+      const history = store.get('history', []);
+      const newEntry = {
+        ...exportData,
+        filePath,
+        timestamp: new Date().toISOString()
+      };
+      history.unshift(newEntry);
+      store.set('history', history.slice(0, 100));
+
+      persons[personIndex].processed = true;
+      persons[personIndex].filePath = filePath;
+      store.set('persons', persons);
+
+      return { success: true, filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('export-person', async (event, id) => {
+    const persons = store.get('persons', []);
+    const personIndex = persons.findIndex(p => p.id === id);
+    if (personIndex === -1) return { success: false, error: 'Person nicht gefunden' };
+
+    const person = persons[personIndex];
+    const defaultPath = store.get('defaultPath', app.getPath('documents'));
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      defaultPath: defaultPath,
+      properties: ['openDirectory'],
+      title: 'Bitte Zielordner auswählen',
+      buttonLabel: 'Speichern unter'
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, error: 'Abgebrochen' };
+    }
+
+    const selectedPath = result.filePaths[0];
+    const filePath = path.join(selectedPath, '_fertig.txt');
+
+    try {
+      const exportData = {
+        vorname: person.vorname,
+        nachname: person.nachname,
+        email: person.email,
+        telefon: person.telefon
+      };
+      const content = JSON.stringify(exportData, null, 2);
+      await fs.writeFile(filePath, content, 'utf-8');
+
+      const history = store.get('history', []);
+      const newEntry = {
+        ...exportData,
+        filePath,
+        timestamp: new Date().toISOString()
+      };
+      history.unshift(newEntry);
+      store.set('history', history.slice(0, 100));
+
+      persons[personIndex].processed = true;
+      persons[personIndex].filePath = filePath;
+      store.set('persons', persons);
+
+      return { success: true, filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('save-settings', (event, defaultPath) => {
     store.set('defaultPath', defaultPath);
     return true;
@@ -156,6 +321,8 @@ app.whenReady().then(() => {
     return { success: true, filePath: result.filePaths[0] };
   });
 
+  // select-folder-and-save ist hiermit obsolet, bleibt aber zwecks Rückwärtskompatibilität,
+  // falls noch wo gebraucht.
   ipcMain.handle('select-folder-and-save', async (event, data) => {
     const defaultPath = store.get('defaultPath', app.getPath('documents'));
 

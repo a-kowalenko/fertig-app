@@ -65,6 +65,7 @@ export default function HistoryPage() {
               <th className="py-3 px-4">Nachname</th>
               <th className="py-3 px-4">E-Mail</th>
               <th className="py-3 px-4">Telefon</th>
+              <th className="py-3 px-4">Speicherort</th>
             </tr>
           </thead>
           <tbody>
@@ -76,11 +77,14 @@ export default function HistoryPage() {
                   <td className="py-3 px-4">{entry.nachname}</td>
                   <td className="py-3 px-4">{entry.email}</td>
                   <td className="py-3 px-4">{entry.telefon || '-'}</td>
+                  <td className="py-3 px-4 text-xs font-mono text-gray-500 break-all max-w-[200px]" title={entry.filePath}>
+                    {entry.filePath ? entry.filePath.split('\\').slice(-2, -1)[0] : '-'}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="py-6 text-center text-gray-500">
+                <td colSpan="6" className="py-6 text-center text-gray-500">
                   {search ? 'Keine Einträge zur Suche gefunden.' : 'Noch keine Einträge vorhanden.'}
                 </td>
               </tr>
