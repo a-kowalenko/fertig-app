@@ -16,7 +16,7 @@ export default function App() {
         <header className="w-full bg-white shadow-sm border-b sticky top-0 z-40">
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center px-4 pt-4">
             <div className="flex items-center pb-4 md:pb-0">
-              <img src="/icon.png" alt="Fertig App Logo" className="w-8 h-8 mr-3 object-contain" />
+              <img src="./icon.png" alt="Fertig App Logo" className="w-8 h-8 mr-3 object-contain" />
               <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Fertig App</h1>
             </div>
             <nav className="flex gap-1 md:gap-2">
