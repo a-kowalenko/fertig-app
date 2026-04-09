@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import FolderSelectionModal from '../components/FolderSelectionModal';
+import PersonSelectionModal from '../components/PersonSelectionModal';
 
 export default function PersonsPage() {
   const [persons, setPersons] = useState([]);
@@ -14,8 +15,10 @@ export default function PersonsPage() {
   const [editingPerson, setEditingPerson] = useState(null);
   const [editFormData, setEditFormData] = useState({ vorname: '', nachname: '', email: '', telefon: '' });
 
-  // Custom Folder Export Modal
+  // Custom Folder Export Modal states
   const [exportingPersonId, setExportingPersonId] = useState(null);
+  const [assignFolderMode, setAssignFolderMode] = useState(false);
+  const [selectedFolderForAssign, setSelectedFolderForAssign] = useState(null);
 
   const loadPersons = async () => {
     if (window.electronAPI) {
@@ -31,6 +34,33 @@ export default function PersonsPage() {
   const handleExport = async (id) => {
     if (!window.electronAPI) return;
     setExportingPersonId(id);
+  };
+
+  const handleStartAssignFolder = () => {
+    if (!window.electronAPI) return;
+    setAssignFolderMode(true);
+  };
+
+  const onAssignFolderSelected = (folderPath) => {
+    setAssignFolderMode(false);
+    setSelectedFolderForAssign(folderPath);
+  };
+
+  const executeExportToAssignedFolder = async (personId) => {
+      if (!window.electronAPI || !selectedFolderForAssign) return;
+
+      try {
+        const result = await window.electronAPI.exportPersonToPath({ id: personId, targetPath: selectedFolderForAssign });
+        if (result.success) {
+          toast.success(`Kunde zugewiesen & Datei erfolgreich erstellt:\n${result.filePath}`, { duration: 4000 });
+          loadPersons();
+          setSelectedFolderForAssign(null);
+        } else {
+          toast.error(`Fehler: ${result.error}`);
+        }
+      } catch (err) {
+        toast.error(err.message);
+      }
   };
 
   const executeExport = async (folderPath) => {
@@ -111,6 +141,16 @@ export default function PersonsPage() {
         <h2 className="text-2xl font-bold text-gray-800">Kunden Übersicht</h2>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <button
+             onClick={handleStartAssignFolder}
+             className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded shadow-sm transition-colors whitespace-nowrap hidden md:inline-flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            Ordner verknüpfen
+          </button>
+
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -250,10 +290,28 @@ export default function PersonsPage() {
         </div>
       )}
 
+      {/* Mode 1: Click person -> Select folder -> Export */}
       {exportingPersonId && (
         <FolderSelectionModal
           onClose={() => setExportingPersonId(null)}
           onSelect={(folderPath) => executeExport(folderPath)}
+        />
+      )}
+
+      {/* Mode 2: Click "Ordner verknüpfen" -> Select folder */}
+      {assignFolderMode && (
+        <FolderSelectionModal
+          onClose={() => setAssignFolderMode(false)}
+          onSelect={(folderPath) => onAssignFolderSelected(folderPath)}
+        />
+      )}
+
+      {/* Mode 2 (Step 3): Folder selected -> Select unassigned person -> Export */}
+      {selectedFolderForAssign && (
+        <PersonSelectionModal
+          persons={persons}
+          onClose={() => setSelectedFolderForAssign(null)}
+          onSelect={(personId) => executeExportToAssignedFolder(personId)}
         />
       )}
 
