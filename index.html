@@ -5,8 +5,100 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fertig App</title>
+    <style>
+      html, body {
+        margin: 0;
+        background: #0b1220;
+      }
+
+      #app-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(145deg, #10271e, #183827);
+        font-family: Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+      }
+
+      .app-splash__card {
+        width: min(92vw, 420px);
+        border-radius: 20px;
+        background: rgba(17, 24, 39, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        box-shadow: 0 24px 56px rgba(2, 6, 23, 0.55);
+        backdrop-filter: blur(10px);
+        padding: 28px 24px;
+        text-align: center;
+      }
+
+      .app-splash__logo {
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        min-height: 72px;
+        max-width: 72px;
+        max-height: 72px;
+        margin: 0 auto 12px;
+        display: block;
+        object-fit: contain;
+      }
+
+      .app-splash__title {
+        margin: 0;
+        color: #f3f4f6;
+        font-size: 1.5rem;
+        letter-spacing: 0.01em;
+        font-weight: 700;
+      }
+
+      .app-splash__version {
+        margin: 8px 0 16px;
+        color: #cbd5e1;
+        font-size: 0.85rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-variant-numeric: tabular-nums;
+        display: inline-block;
+        min-width: 29ch;
+        min-height: 1.4em;
+        white-space: nowrap;
+      }
+
+      .app-splash__spinner {
+        width: 34px;
+        height: 34px;
+        margin: 0 auto;
+        border: 3px solid rgba(203, 213, 225, 0.38);
+        border-top-color: #34d399;
+        border-radius: 50%;
+        animation: app-splash-spin 850ms linear infinite;
+      }
+
+      .app-splash__loading-text {
+        margin: 16px 0 0;
+        color: #e2e8f0;
+        font-size: 0.9rem;
+        min-height: 1.4em;
+      }
+
+      @keyframes app-splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="app-splash">
+      <div class="app-splash__card">
+        <img src="/icon.png" alt="Fertig App" class="app-splash__logo" />
+        <h1 class="app-splash__title">Fertig App</h1>
+        <p id="app-splash-version" class="app-splash__version">Version wird geladen...</p>
+        <div class="app-splash__spinner" aria-hidden="true"></div>
+        <p id="app-splash-loading-text" class="app-splash__loading-text" hidden>Lade...</p>
+      </div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

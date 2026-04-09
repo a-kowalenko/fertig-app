@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getAppMeta: () => ipcRenderer.invoke('get-app-meta'),
   getLatestVersionInfo: () => ipcRenderer.invoke('get-latest-version-info'),
   getHistory: () => ipcRenderer.invoke('get-history'),
   getSettings: () => ipcRenderer.invoke('get-settings'),

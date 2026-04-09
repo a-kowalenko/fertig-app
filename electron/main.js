@@ -11,6 +11,22 @@ const __dirname = path.dirname(__filename);
 
 const store = new Store();
 
+function getChannelFromVersion(version) {
+  const prerelease = version?.split('-')[1];
+  if (!prerelease) return '';
+  return prerelease.split('.')[0] || '';
+}
+
+function getBuildMeta() {
+  const buildNumber =
+    process.env.BUILD_NUMBER ||
+    process.env.APP_BUILD_NUMBER ||
+    process.env.GITHUB_RUN_NUMBER ||
+    '';
+  const channel = process.env.RELEASE_CHANNEL || getChannelFromVersion(app.getVersion());
+  return { buildNumber, channel };
+}
+
 app.whenReady().then(() => {
   let iconPath;
   if (process.platform === 'win32') {
@@ -26,6 +42,7 @@ app.whenReady().then(() => {
     width: 950,
     height: 800,
     autoHideMenuBar: true,
+    backgroundColor: '#0b1220',
     // Dynamisches Icon je nach Betriebssystem aus dem Ordner "assets"
     icon: iconPath,
     webPreferences: {
@@ -120,6 +137,15 @@ app.whenReady().then(() => {
     return app.getVersion();
   });
 
+  ipcMain.handle('get-app-meta', () => {
+    const { buildNumber, channel } = getBuildMeta();
+    return {
+      version: app.getVersion(),
+      buildNumber,
+      channel,
+    };
+  });
+
   ipcMain.handle('get-latest-version-info', async () => {
     const skippedVersion = store.get('skippedUpdateVersion');
     if (!cachedLatestVersion) {
@@ -144,7 +170,9 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('get-settings', () => {
-    return store.get('defaultPath', app.getPath('documents'));
+    return {
+      defaultPath: store.get('defaultPath', app.getPath('documents')),
+    };
   });
 
   ipcMain.handle('save-person', (event, data) => {
@@ -323,8 +351,18 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.handle('save-settings', (event, defaultPath) => {
-    store.set('defaultPath', defaultPath);
+  ipcMain.handle('save-settings', (event, settings) => {
+    if (typeof settings === 'string') {
+      store.set('defaultPath', settings);
+      return true;
+    }
+
+    if (settings && typeof settings === 'object') {
+      if (typeof settings.defaultPath === 'string') {
+        store.set('defaultPath', settings.defaultPath);
+      }
+    }
+
     return true;
   });
 

@@ -6,16 +6,32 @@ export default function SettingsPage() {
   const [defaultPath, setDefaultPath] = useState('');
   const [isPathLoading, setIsPathLoading] = useState(true);
   const [isVersionLoading, setIsVersionLoading] = useState(true);
-  const [appVersion, setAppVersion] = useState('');
+  const [appVersionLabel, setAppVersionLabel] = useState('');
+  const [appVersionRaw, setAppVersionRaw] = useState('');
   const [latestVersion, setLatestVersion] = useState('');
   const [skippedVersion, setSkippedVersion] = useState('');
+
+  const formatVersionLabel = (meta) => {
+    const version = meta?.version || '';
+    const buildNumber = meta?.buildNumber ? String(meta.buildNumber).trim() : '';
+    const channel = meta?.channel ? String(meta.channel).trim() : '';
+    const normalizedVersion = version ? (version.startsWith('v') ? version : `v${version}`) : '';
+
+    if (!normalizedVersion) return '';
+    if (!buildNumber) return normalizedVersion;
+    return `${normalizedVersion} (${channel ? `${buildNumber}/${channel}` : buildNumber})`;
+  };
 
   useEffect(() => {
     async function loadSettings() {
       if (window.electronAPI) {
         try {
-          const path = await window.electronAPI.getSettings();
-          setDefaultPath(path);
+          const settings = await window.electronAPI.getSettings();
+          if (typeof settings === 'string') {
+            setDefaultPath(settings);
+          } else {
+            setDefaultPath(settings?.defaultPath || '');
+          }
         } catch (e) {
           console.error('Error loading path:', e);
         } finally {
@@ -23,9 +39,14 @@ export default function SettingsPage() {
         }
 
         try {
-          if (window.electronAPI.getAppVersion) {
+          if (window.electronAPI.getAppMeta) {
+            const meta = await window.electronAPI.getAppMeta();
+            setAppVersionRaw(meta?.version || '');
+            setAppVersionLabel(formatVersionLabel(meta));
+          } else if (window.electronAPI.getAppVersion) {
             const version = await window.electronAPI.getAppVersion();
-            setAppVersion(version);
+            setAppVersionRaw(version || '');
+            setAppVersionLabel(formatVersionLabel({ version }));
           }
 
           if (window.electronAPI.getLatestVersionInfo) {
@@ -51,7 +72,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (!window.electronAPI) return;
     try {
-      await window.electronAPI.saveSettings(defaultPath);
+      await window.electronAPI.saveSettings({ defaultPath });
       toast.success('Einstellungen gespeichert!');
     } catch (e) {
       toast.error('Fehler beim Speichern');
@@ -128,6 +149,7 @@ export default function SettingsPage() {
           Dieser Pfad wird verwendet, wenn der Dialog zum Speichern der "_fertig.txt" geöffnet wird.
         </p>
 
+
         <Button
           variant="primary"
           onClick={handleSave}
@@ -148,9 +170,9 @@ export default function SettingsPage() {
                 <span className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-gray-400"></span>
               </span>
             ) : (
-              appVersion && (
+              appVersionLabel && (
                 <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded border border-gray-200 font-mono">
-                  v{appVersion}
+                  {appVersionLabel}
                 </span>
               )
             )}
@@ -165,11 +187,11 @@ export default function SettingsPage() {
             ) : (
               latestVersion ? (
                 <>
-                  <span className={`px-2 py-0.5 rounded border font-mono ${latestVersion === appVersion ? 'bg-green-50 text-green-800 border-green-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}>
+                  <span className={`px-2 py-0.5 rounded border font-mono ${latestVersion === appVersionRaw ? 'bg-green-50 text-green-800 border-green-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}>
                     v{latestVersion}
                   </span>
-                  {latestVersion === appVersion && <span className="text-green-600 text-xs ml-1">(Sie sind auf dem neuesten Stand)</span>}
-                  {latestVersion !== appVersion && latestVersion === skippedVersion && <span className="text-orange-500 text-xs ml-1">(Diese Version wird aktuell ignoriert)</span>}
+                  {latestVersion === appVersionRaw && <span className="text-green-600 text-xs ml-1">(Sie sind auf dem neuesten Stand)</span>}
+                  {latestVersion !== appVersionRaw && latestVersion === skippedVersion && <span className="text-orange-500 text-xs ml-1">(Diese Version wird aktuell ignoriert)</span>}
                 </>
               ) : (
                 <span className="text-gray-500 italic">Unbekannt</span>
