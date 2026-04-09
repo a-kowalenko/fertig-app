@@ -59,16 +59,6 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {parentPath && parentPath !== currentPath && (
-              <button
-                onClick={() => loadDirectory(parentPath)}
-                className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded text-left border border-transparent hover:border-gray-200 transition-colors"
-              >
-                <span className="text-gray-400">..</span>
-                <span className="font-medium">Eine Ebene höher</span>
-              </button>
-            )}
-            
             {folders.map(f => (
               <div 
                 key={f.name} 

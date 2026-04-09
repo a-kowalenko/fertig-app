@@ -18,7 +18,6 @@ export default function UpdateModal() {
           setUpdateInfo(data.info);
           setStatus('not-available');
           setVisible(true);
-          setTimeout(() => setVisible(false), 3000);
         } else if (data.type === 'download-progress') {
           setStatus('downloading');
           setProgress(data.progress);
@@ -27,6 +26,7 @@ export default function UpdateModal() {
         } else if (data.type === 'error') {
           setStatus('error');
           setErrorMsg(data.error);
+          setVisible(true);
         }
       });
     }
@@ -71,6 +71,11 @@ export default function UpdateModal() {
           <div>
             <h3 className="text-xl font-bold mb-4 text-gray-800">Kein Update verfügbar</h3>
             <p className="text-gray-600 mb-6">Sie sind bereits auf der neuesten Version.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={handleClose} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition">
+                Schließen
+              </button>
+            </div>
           </div>
         )}
 
