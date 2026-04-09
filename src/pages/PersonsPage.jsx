@@ -1,7 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import FolderSelectionModal from '../components/FolderSelectionModal';
 import PersonSelectionModal from '../components/PersonSelectionModal';
+import Button from '../components/Button';
 
 export default function PersonsPage() {
   const [persons, setPersons] = useState([]);
@@ -11,9 +13,15 @@ export default function PersonsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // React Hook Form for Edit Modal
+  const { register, handleSubmit, reset, watch, formState: { errors, touchedFields } } = useForm({
+    mode: 'onTouched',
+    reValidateMode: 'onChange'
+  });
+  const telefonValue = watch('telefon');
+
   // States for Edit Modal
   const [editingPerson, setEditingPerson] = useState(null);
-  const [editFormData, setEditFormData] = useState({ vorname: '', nachname: '', email: '', telefon: '' });
 
   // Custom Folder Export Modal states
   const [exportingPersonId, setExportingPersonId] = useState(null);
@@ -80,16 +88,15 @@ export default function PersonsPage() {
     }
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
+  const handleEditSubmit = async (data) => {
     if (!window.electronAPI || !editingPerson) return;
     try {
       const payload = {
         id: editingPerson.id,
-        vorname: editFormData.vorname.trim(),
-        nachname: editFormData.nachname.trim(),
-        email: editFormData.email.trim(),
-        telefon: editFormData.telefon?.trim() || ''
+        vorname: data.vorname.trim(),
+        nachname: data.nachname.trim(),
+        email: data.email.trim(),
+        telefon: data.telefon?.trim() || ''
       };
 
       const result = await window.electronAPI.updatePerson(payload);
@@ -105,9 +112,36 @@ export default function PersonsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.electronAPI || !editingPerson) return;
+
+    // Einfache Bestätigung
+    if (!window.confirm('Möchten Sie diesen Kunden wirklich löschen?')) {
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.deletePerson(editingPerson.id);
+      if (result.success) {
+        toast.success('Kunde erfolgreich gelöscht!');
+        setEditingPerson(null);
+        loadPersons();
+      } else {
+        toast.error(`Fehler: ${result.error}`);
+      }
+    } catch (err) {
+      toast.error('Unerwarteter Fehler beim Löschen.');
+    }
+  };
+
   const openEditModal = (p) => {
     setEditingPerson(p);
-    setEditFormData({ vorname: p.vorname, nachname: p.nachname, email: p.email, telefon: p.telefon || '' });
+    reset({
+      vorname: p.vorname || '',
+      nachname: p.nachname || '',
+      email: p.email || '',
+      telefon: p.telefon || ''
+    });
   };
 
   useEffect(() => {
@@ -141,15 +175,16 @@ export default function PersonsPage() {
         <h2 className="text-2xl font-bold text-gray-800">Kunden Übersicht</h2>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <button
+          <Button
+             variant="success"
              onClick={handleStartAssignFolder}
-             className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded shadow-sm transition-colors whitespace-nowrap hidden md:inline-flex items-center gap-2"
+             className="whitespace-nowrap hidden md:inline-flex"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
             Ordner verknüpfen
-          </button>
+          </Button>
 
           <select
             value={filter}
@@ -224,18 +259,18 @@ export default function PersonsPage() {
                     {p.processed ? (
                       <button
                          onClick={() => handleExport(p.id)}
-                         className="text-xs text-gray-500 hover:text-blue-600 transition-colors underline whitespace-nowrap inline-block"
+                         className="text-xs text-gray-500 hover:text-gray-700 active:text-gray-900 transition-colors underline whitespace-nowrap inline-block"
                          title="Erneuter Export möglich"
                       >
                         Erneut Exportieren
                       </button>
                     ) : (
-                      <button
+                      <Button
                         onClick={() => handleExport(p.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded text-xs transition-colors shadow-sm whitespace-nowrap inline-block"
+                        className="text-xs px-3 py-1.5 whitespace-nowrap inline-flex"
                       >
                         Exportieren
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -319,61 +354,89 @@ export default function PersonsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold mb-4 text-gray-800">Kunde bearbeiten</h3>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(handleEditSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Vorname *</label>
                 <input
-                  type="text"
-                  value={editFormData.vorname}
-                  onChange={(e) => setEditFormData((prev) => ({ ...prev, vorname: e.target.value }))}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                  {...register('vorname', {
+                    required: 'Vorname ist erforderlich',
+                    minLength: { value: 2, message: 'Vorname muss mindestens 2 Zeichen lang sein' },
+                    maxLength: { value: 50, message: 'Vorname darf maximal 50 Zeichen lang sein' },
+                    pattern: {
+                      value: /^[a-zA-ZÀ-ÿ\s\-']+$/,
+                      message: 'Der Vorname enthält ungültige Zeichen'
+                    }
+                  })}
+                  className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.vorname ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.vorname ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
                 />
+                {errors.vorname && <p className="text-red-500 text-sm mt-1">{errors.vorname.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nachname *</label>
                 <input
-                  type="text"
-                  value={editFormData.nachname}
-                  onChange={(e) => setEditFormData((prev) => ({ ...prev, nachname: e.target.value }))}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                  {...register('nachname', {
+                    required: 'Nachname ist erforderlich',
+                    minLength: { value: 2, message: 'Nachname muss mindestens 2 Zeichen lang sein' },
+                    maxLength: { value: 50, message: 'Nachname darf maximal 50 Zeichen lang sein' },
+                    pattern: {
+                      value: /^[a-zA-ZÀ-ÿ\s\-']+$/,
+                      message: 'Der Nachname enthält ungültige Zeichen'
+                    }
+                  })}
+                  className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.nachname ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.nachname ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
                 />
+                {errors.nachname && <p className="text-red-500 text-sm mt-1">{errors.nachname.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail *</label>
                 <input
                   type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                  {...register('email', {
+                    required: 'E-Mail ist erforderlich',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Bitte eine gültige E-Mail-Adresse eingeben'
+                    }
+                  })}
+                  className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.email ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.email ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
                 />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
                 <input
                   type="tel"
-                  value={editFormData.telefon}
-                  onChange={(e) => setEditFormData((prev) => ({ ...prev, telefon: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                  {...register('telefon', {
+                    pattern: {
+                      value: /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\./0-9]*$/,
+                      message: 'Bitte eine gültige Telefonnummer eingeben'
+                    }
+                  })}
+                  className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.telefon ? 'border-red-500 focus:ring-red-500 bg-red-50' : (touchedFields.telefon && telefonValue && telefonValue.trim().length > 0) ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
                 />
+                {errors.telefon && <p className="text-red-500 text-sm mt-1">{errors.telefon.message}</p>}
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingPerson(null)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition"
+              <div className="flex justify-between items-center pt-2">
+                <Button
+                  variant="danger"
+                  onClick={handleDelete}
                 >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition"
-                >
-                  Speichern
-                </button>
+                  Löschen
+                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setEditingPerson(null)}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    type="submit"
+                  >
+                    Speichern
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -382,4 +445,3 @@ export default function PersonsPage() {
     </div>
   );
 }
-

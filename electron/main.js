@@ -12,10 +12,22 @@ const __dirname = path.dirname(__filename);
 const store = new Store();
 
 app.whenReady().then(() => {
+  let iconPath;
+  if (process.platform === 'win32') {
+    iconPath = path.join(__dirname, '../assets/windows/icon.ico');
+  } else if (process.platform === 'linux') {
+    iconPath = path.join(__dirname, '../assets/linux/icons/512x512.png');
+  } else {
+    // Fallback für macOS (hauptsächlich über package.json gesteuert, aber zur Sicherheit)
+    iconPath = path.join(__dirname, '../assets/icon.png');
+  }
+
   const mainWindow = new BrowserWindow({
     width: 950,
     height: 800,
     autoHideMenuBar: true,
+    // Dynamisches Icon je nach Betriebssystem aus dem Ordner "assets"
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -171,6 +183,18 @@ app.whenReady().then(() => {
     return { success: true };
   });
 
+  ipcMain.handle('delete-person', (event, personId) => {
+    const persons = store.get('persons', []);
+    const index = persons.findIndex((p) => p.id === personId);
+    if (index === -1) {
+      return { success: false, error: 'Kunde nicht gefunden' };
+    }
+
+    persons.splice(index, 1);
+    store.set('persons', persons);
+    return { success: true };
+  });
+
   // Neue API für Dateisystem
   ipcMain.handle('read-directory', async (event, dirPath) => {
     try {
@@ -190,7 +214,7 @@ app.whenReady().then(() => {
             for (const f of files) {
               if (f.isFile()) {
                 const s = await fs.stat(path.join(fullPath, f.name));
-                // Wenn letze Änderung jünger als 3 Sekunden ist -> wir nehmen an, Kopiervorgang aktiv
+                // Wenn letse Änderung jünger als 3 Sekunden ist -> wir nehmen an, Kopiervorgang aktiv
                 if (now - s.mtimeMs < 3000) {
                   isReady = false;
                   break;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function FormPage() {
   const { register, handleSubmit, reset, watch, formState: { errors, touchedFields } } = useForm({
@@ -45,7 +46,7 @@ export default function FormPage() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto w-full relative">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Person aufnehmen</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Kunde aufnehmen</h2>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -114,12 +115,12 @@ export default function FormPage() {
           {errors.telefon && <p className="text-red-500 text-sm mt-1">{errors.telefon.message}</p>}
         </div>
 
-        <button
+        <Button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded mt-4 transition-colors"
+          className="w-full mt-4"
         >
           Person anlegen
-        </button>
+        </Button>
       </form>
     </div>
   );

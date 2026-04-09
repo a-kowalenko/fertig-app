@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function SettingsPage() {
   const [defaultPath, setDefaultPath] = useState('');
@@ -114,12 +115,12 @@ export default function SettingsPage() {
               placeholder="z.B. C:\Users\Max\Documents"
               className="flex-grow p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
             />
-            <button
+            <Button
+              variant="outline"
               onClick={handleSelectPath}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition-colors border border-gray-300"
             >
               Auswählen
-            </button>
+            </Button>
           </div>
         )}
 
@@ -127,13 +128,13 @@ export default function SettingsPage() {
           Dieser Pfad wird verwendet, wenn der Dialog zum Speichern der "_fertig.txt" geöffnet wird.
         </p>
 
-        <button
+        <Button
+          variant="primary"
           onClick={handleSave}
           disabled={isPathLoading}
-          className={`bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-6 rounded transition-colors ${isPathLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Speichern
-        </button>
+        </Button>
 
         <hr className="my-8 border-gray-200" />
 
@@ -180,12 +181,12 @@ export default function SettingsPage() {
         <p className="text-sm text-gray-500 mb-4">
           Hier können Sie manuell nach neuen Versionen suchen. Wenn Sie ein Update zuvor ignoriert haben, wird es Ihnen nun wieder angeboten.
         </p>
-        <button
+        <Button
+            variant="dark"
           onClick={handleCheckForUpdates}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors"
         >
           Auf Updates prüfen
-        </button>
+        </Button>
       </div>
 
       <div className="mt-12 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import Button from './Button';
 
 export default function UpdateModal() {
   const [visible, setVisible] = useState(false);
@@ -72,9 +73,9 @@ export default function UpdateModal() {
             <h3 className="text-xl font-bold mb-4 text-gray-800">Kein Update verfügbar</h3>
             <p className="text-gray-600 mb-6">Sie sind bereits auf der neuesten Version.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={handleClose} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition">
+              <Button onClick={handleClose}>
                 Schließen
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -86,15 +87,15 @@ export default function UpdateModal() {
               Eine neue Version ({updateInfo?.version}) ist verfügbar. Möchten Sie sie jetzt herunterladen?
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={handleSkip} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition">
+              <Button variant="secondary" onClick={handleSkip}>
                 Version ignorieren
-              </button>
-              <button onClick={handleClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition">
+              </Button>
+              <Button variant="secondary" onClick={handleClose}>
                 Später
-              </button>
-              <button onClick={handleDownload} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition">
+              </Button>
+              <Button onClick={handleDownload}>
                 Herunterladen
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -131,12 +132,12 @@ export default function UpdateModal() {
               Das Update wurde erfolgreich heruntergeladen. Starten Sie die App neu, um es zu installieren.
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={handleClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition">
+              <Button variant="secondary" onClick={handleClose}>
                 Später installieren
-              </button>
-              <button onClick={handleInstall} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition">
+              </Button>
+              <Button variant="success" onClick={handleInstall}>
                 Jetzt neu starten
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -148,9 +149,9 @@ export default function UpdateModal() {
               {errorMsg}
             </p>
             <div className="flex justify-end">
-              <button onClick={handleClose} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded transition">
+              <Button variant="outline" onClick={handleClose}>
                 Schließen
-              </button>
+              </Button>
             </div>
           </div>
         )}

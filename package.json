@@ -1,6 +1,6 @@
 {
   "name": "fertig-app",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "private": true,
   "main": "dist-electron/main.js",
   "type": "module",
@@ -26,19 +26,23 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "assets/**/*"
     ],
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "assets/macos/icon.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/windows/icon.ico"
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
-      ]
+      ],
+      "icon": "assets/linux/icons"
     }
   },
   "devDependencies": {

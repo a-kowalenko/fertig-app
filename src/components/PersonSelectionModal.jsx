@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import Button from './Button';
 
 export default function PersonSelectionModal({ persons, onClose, onSelect }) {
   const [search, setSearch] = useState('');
@@ -49,12 +50,12 @@ export default function PersonSelectionModal({ persons, onClose, onSelect }) {
                     <div className="font-medium text-gray-800">{p.vorname} {p.nachname}</div>
                     <div className="text-xs text-gray-500">{p.email} {p.telefon ? `• ${p.telefon}` : ''}</div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => onSelect(p.id)}
-                    className="ml-2 text-sm px-4 py-1.5 rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    className="text-sm px-4 py-1.5 ml-2"
                   >
                     Auswählen & Exportieren
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -66,12 +67,12 @@ export default function PersonSelectionModal({ persons, onClose, onSelect }) {
         </div>
 
         <div className="flex justify-end pt-2">
-            <button
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition font-medium"
             >
               Abbrechen
-            </button>
+            </Button>
         </div>
       </div>
     </div>

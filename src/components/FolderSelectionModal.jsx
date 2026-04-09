@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import Button from './Button';
 
 export default function FolderSelectionModal({ onClose, onSelect }) {
   const [currentPath, setCurrentPath] = useState(null);
@@ -78,13 +79,14 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
                   {!f.isReady && (
                      <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse mr-3" title="Kopiervorgang evtl. aktiv"></div>
                   )}
-                  <button
+                  <Button
+                    variant="success"
                     onClick={() => onSelect(f.path)}
                     disabled={!f.isReady}
-                    className={`ml-2 text-xs px-3 py-1 rounded font-medium transition-colors ${f.isReady ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                    className="text-xs px-3 py-1 ml-2"
                   >
                     Hier speichern
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -102,12 +104,12 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
                 <span className="inline-block w-3 h-3 bg-green-100 border border-green-200 rounded"></span> = Bereit
                 <span className="inline-block w-3 h-3 bg-white border border-gray-200 rounded ml-2"></span> = Wird geschrieben
             </div>
-            <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition font-medium"
+            <Button
+              variant="secondary"
+              onClick={onClose}
             >
-            Abbrechen
-            </button>
+              Abbrechen
+            </Button>
         </div>
       </div>
     </div>
