@@ -59,23 +59,26 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
               <span className="text-gray-500">Lade...</span>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
             {folders.map(f => (
               <div 
                 key={f.name} 
-                className={`flex justify-between items-center p-2 rounded border transition-colors ${f.isReady ? 'bg-green-50 border-green-200 hover:bg-green-100' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                className={`flex justify-between items-start p-2 rounded border transition-colors ${f.isReady ? 'bg-green-100 border-green-200 hover:bg-green-100' : 'bg-red-100 border-gray-200 hover:bg-red-200'}`}
               >
                 <button
                   onClick={() => loadDirectory(f.path)}
-                  className="flex-1 flex items-center gap-2 text-left truncate overflow-hidden"
-                  title={f.name}
+                  className="flex-1 min-w-0 flex items-start gap-2 text-left"
+                  title={f.path}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 flex-shrink-0 ${f.isReady ? 'text-green-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
-                  <span className="truncate text-gray-700 font-medium">{f.name}</span>
+                  <div className="min-w-0">
+                    <p className="text-gray-700 font-medium whitespace-normal break-words">{f.name}</p>
+                    <p className="text-xs text-gray-500 whitespace-normal break-all">{f.path}</p>
+                  </div>
                 </button>
-                <div className="flex items-center">
+                <div className="flex items-center self-start ml-2">
                   {!f.isReady && (
                      <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse mr-3" title="Kopiervorgang evtl. aktiv"></div>
                   )}
