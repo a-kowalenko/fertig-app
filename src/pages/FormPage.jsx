@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
 export default function FormPage() {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { errors, touchedFields } } = useForm({
     mode: 'onTouched',
     reValidateMode: 'onChange'
   });
 
-  const [status, setStatus] = useState(null);
+  const telefonValue = watch('telefon');
 
   const onSubmit = async (data) => {
-    setStatus({ type: 'info', message: 'Wähle den Zielordner...' });
-    
+    let loadingToastId;
+
     try {
       const payload = {
         vorname: data.vorname.trim(),
@@ -24,20 +25,23 @@ export default function FormPage() {
       }
 
       if (window.electronAPI) {
+        // Optionale Loading-Toast für längeres Warten (Dialog) auskommentiert, da Dialog systemnativ ist.
         const result = await window.electronAPI.selectFolderAndSave(payload);
         if (result.success) {
-          setStatus({ type: 'success', message: `Erfolgreich gespeichert in:\n${result.filePath}` });
+          toast.success(`Erfolgreich gespeichert in:\n${result.filePath}`, { duration: 4000 });
           reset();
         } else {
-          setStatus({ type: 'error', message: `Fehler: ${result.error}` });
+          if (result.error !== 'Abgebrochen') {
+            toast.error(`Fehler: ${result.error}`);
+          }
         }
       } else {
-        setStatus({ type: 'error', message: 'Electron API nicht verfügbar. (Browser Modus?)' });
+        toast.error('Electron API nicht verfügbar. (Browser Modus?)');
         console.log('Daten:', payload);
         reset();
       }
     } catch (err) {
-      setStatus({ type: 'error', message: err.message });
+      toast.error(err.message);
     }
   };
 
@@ -45,22 +49,6 @@ export default function FormPage() {
     <div className="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto w-full relative">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Person aufnehmen</h2>
-      </div>
-
-      <div className="h-20 mb-2 relative">
-        {status ? (
-          <div className={`absolute inset-0 p-4 rounded ${
-            status.type === 'success' ? 'bg-green-100 text-green-800' : 
-            status.type === 'error' ? 'bg-red-100 text-red-800' : 
-            'bg-blue-100 text-blue-800'
-          } whitespace-pre-wrap break-all flex items-center justify-center text-center overflow-auto shadow-sm`}>
-            {status.message}
-          </div>
-        ) : (
-          <div className="absolute inset-0 p-4 rounded bg-gray-50 flex items-center justify-center text-gray-500 border border-dashed border-gray-300">
-            Bitte fülle das Formular aus.
-          </div>
-        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -76,7 +64,7 @@ export default function FormPage() {
                 message: 'Der Vorname enthält ungültige Zeichen'
               }
             })}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none ${errors.vorname ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.vorname ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.vorname ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
           />
           {errors.vorname && <p className="text-red-500 text-sm mt-1">{errors.vorname.message}</p>}
         </div>
@@ -93,7 +81,7 @@ export default function FormPage() {
                 message: 'Der Nachname enthält ungültige Zeichen'
               }
             })}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none ${errors.nachname ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.nachname ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.nachname ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
           />
           {errors.nachname && <p className="text-red-500 text-sm mt-1">{errors.nachname.message}</p>}
         </div>
@@ -109,7 +97,7 @@ export default function FormPage() {
                 message: 'Bitte eine gültige E-Mail-Adresse eingeben'
               }
             })}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.email ? 'border-red-500 focus:ring-red-500 bg-red-50' : touchedFields.email ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
           />
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
@@ -124,7 +112,7 @@ export default function FormPage() {
                 message: 'Bitte eine gültige Telefonnummer eingeben'
               }
             })}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none ${errors.telefon ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.telefon ? 'border-red-500 focus:ring-red-500 bg-red-50' : (touchedFields.telefon && telefonValue && telefonValue.trim().length > 0) ? 'border-green-500 focus:ring-green-500 bg-green-50/30' : 'border-gray-300'}`}
           />
           {errors.telefon && <p className="text-red-500 text-sm mt-1">{errors.telefon.message}</p>}
         </div>

@@ -13,7 +13,8 @@ const store = new Store();
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow({
     width: 800,
-    height: 750,
+    height: 800,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -31,6 +32,7 @@ app.whenReady().then(() => {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   let isManualCheck = false;
+  let cachedLatestVersion = null;
 
   autoUpdater.on('update-available', (info) => {
     const skippedVersion = store.get('skippedUpdateVersion');
@@ -57,17 +59,26 @@ app.whenReady().then(() => {
   });
 
   // Initiale Prüfung im Hintergrund
-  setTimeout(() => {
+  setTimeout(async () => {
     isManualCheck = false;
-    autoUpdater.checkForUpdates().catch(() => {});
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      if (result && result.updateInfo) {
+        cachedLatestVersion = result.updateInfo.version;
+      }
+    } catch(e) {}
   }, 3000);
 
   // --- IPC Handlers ---
 
   ipcMain.handle('check-for-updates', async (event, isManual) => {
     isManualCheck = isManual;
+    cachedLatestVersion = null; // Cache verwerfen
     try {
-      await autoUpdater.checkForUpdates();
+      const result = await autoUpdater.checkForUpdates();
+      if (result && result.updateInfo) {
+        cachedLatestVersion = result.updateInfo.version;
+      }
       return { success: true };
     } catch (e) {
       return { success: false, error: e.message };
@@ -90,6 +101,33 @@ app.whenReady().then(() => {
   ipcMain.handle('skip-update', (event, version) => {
     store.set('skippedUpdateVersion', version);
     return true;
+  });
+
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
+  ipcMain.handle('get-latest-version-info', async () => {
+    const skippedVersion = store.get('skippedUpdateVersion');
+    if (!cachedLatestVersion) {
+      try {
+        const response = await fetch('https://github.com/a-kowalenko/fertig-app/releases/latest/download/latest.yml');
+        if (response.ok) {
+          const text = await response.text();
+          const match = text.match(/version:\s*([^\s]+)/);
+          if (match) {
+            cachedLatestVersion = match[1];
+          }
+        }
+      } catch (e) {
+        console.error('Fehler beim Abrufen der neuesten Version:', e);
+      }
+    }
+    return { skippedVersion, latestVersion: cachedLatestVersion };
+  });
+
+  ipcMain.handle('get-history', () => {
+    return store.get('history', []);
   });
 
   ipcMain.handle('get-settings', () => {
@@ -138,6 +176,16 @@ app.whenReady().then(() => {
     try {
       const content = JSON.stringify(data, null, 2);
       await fs.writeFile(filePath, content, 'utf-8');
+
+      const history = store.get('history', []);
+      const newEntry = {
+        ...data,
+        filePath,
+        timestamp: new Date().toISOString()
+      };
+      history.unshift(newEntry);
+      store.set('history', history.slice(0, 100)); // Behalte die letzten 100 Einträge
+
       return { success: true, filePath };
     } catch (error) {
       return { success: false, error: error.message };

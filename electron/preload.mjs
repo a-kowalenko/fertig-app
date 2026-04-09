@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getLatestVersionInfo: () => ipcRenderer.invoke('get-latest-version-info'),
+  getHistory: () => ipcRenderer.invoke('get-history'),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (path) => ipcRenderer.invoke('save-settings', path),
   selectDefaultPath: () => ipcRenderer.invoke('select-default-path'),
