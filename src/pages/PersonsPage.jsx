@@ -223,7 +223,7 @@ export default function PersonsPage() {
             {currentItems.length > 0 ? (
               currentItems.map((p) => (
                 <tr key={p.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${p.processed ? 'bg-gray-50/50' : ''}`}>
-                  <td className="py-4 px-4 text-center">
+                  <td className="py-3 px-2 text-center">
                     <button
                       onClick={() => openEditModal(p)}
                       className="text-gray-500 hover:text-blue-600 transition-colors p-1 rounded"
@@ -234,11 +234,11 @@ export default function PersonsPage() {
                       </svg>
                     </button>
                   </td>
-                  <td className="py-4 px-4 font-medium text-gray-800">{p.vorname}</td>
-                  <td className="py-4 px-4">{p.nachname}</td>
-                  <td className="py-4 px-4">{p.email}</td>
-                  <td className="py-4 px-4">{p.telefon || '-'}</td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 px-3 font-medium text-gray-800">{p.vorname}</td>
+                  <td className="py-3 px-3">{p.nachname}</td>
+                  <td className="py-3 px-3">{p.email}</td>
+                  <td className="py-3 px-3">{p.telefon || '-'}</td>
+                  <td className="py-3 px-1">
                     {p.processed ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         <svg className="mr-1.5 h-3 w-3 text-green-600" fill="currentColor" viewBox="0 0 8 8">
@@ -255,7 +255,7 @@ export default function PersonsPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-4 px-4 text-right h-[52px]">
+                  <td className="py-3 px-2 text-right h-[52px]">
                     {p.processed ? (
                       <button
                          onClick={() => handleExport(p.id)}
@@ -300,19 +300,15 @@ export default function PersonsPage() {
               Zurück
             </button>
             <div className="flex gap-1">
-              {[...Array(totalPages)].map((_, i) => {
-                // Show a limited number of pages to avoid overflow if there are many pages
-                // For simplicity, mimicking HistoryPage logic which renders all buttons
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`w-8 h-8 rounded border text-sm font-medium transition-colors ${currentPage === i + 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`w-8 h-8 rounded border text-sm font-medium transition-colors ${currentPage === i + 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
             </div>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

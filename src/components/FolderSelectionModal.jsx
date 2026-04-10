@@ -37,6 +37,24 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
     return () => clearInterval(interval);
   }, [currentPath]);
 
+  const getRowColorClass = (folder) => {
+    if (!folder.isReady || folder.folderState === 'busy') {
+      return 'bg-red-100 border-gray-200 hover:bg-red-200';
+    }
+
+    if (folder.wasExportedHere || folder.folderState === 'done') {
+      return 'bg-blue-100 border-blue-200 hover:bg-blue-200';
+    }
+
+    return 'bg-green-100 border-green-200 hover:bg-green-100';
+  };
+
+  const getIconColorClass = (folder) => {
+    if (!folder.isReady || folder.folderState === 'busy') return 'text-red-500';
+    if (folder.wasExportedHere || folder.folderState === 'done') return 'text-blue-500';
+    return 'text-green-500';
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex xl:items-center justify-center z-[60] px-4 py-8">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-full flex flex-col">
@@ -63,14 +81,14 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
             {folders.map(f => (
               <div 
                 key={f.name} 
-                className={`flex justify-between items-start p-2 rounded border transition-colors ${f.isReady ? 'bg-green-100 border-green-200 hover:bg-green-100' : 'bg-red-100 border-gray-200 hover:bg-red-200'}`}
+                className={`flex justify-between items-start p-2 rounded border transition-colors ${getRowColorClass(f)}`}
               >
                 <button
                   onClick={() => loadDirectory(f.path)}
                   className="flex-1 min-w-0 flex items-start gap-2 text-left"
                   title={f.path}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 flex-shrink-0 ${f.isReady ? 'text-green-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 flex-shrink-0 ${getIconColorClass(f)}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                   <div className="min-w-0">
@@ -105,7 +123,8 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
         <div className="flex justify-between items-center pt-2">
             <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="inline-block w-3 h-3 bg-green-100 border border-green-200 rounded"></span> = Bereit
-                <span className="inline-block w-3 h-3 bg-white border border-gray-200 rounded ml-2"></span> = Wird geschrieben
+                <span className="inline-block w-3 h-3 bg-blue-100 border border-blue-200 rounded ml-2"></span> = Bereits exportiert
+                <span className="inline-block w-3 h-3 bg-red-100 border border-gray-200 rounded ml-2"></span> = Wird geschrieben
             </div>
             <Button
               variant="secondary"

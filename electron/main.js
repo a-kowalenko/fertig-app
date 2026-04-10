@@ -39,7 +39,7 @@ app.whenReady().then(() => {
   }
 
   const mainWindow = new BrowserWindow({
-    width: 950,
+    width: 1000,
     height: 800,
     autoHideMenuBar: true,
     backgroundColor: '#0b1220',
@@ -228,6 +228,14 @@ app.whenReady().then(() => {
     try {
       const targetPath = dirPath || store.get('defaultPath', app.getPath('documents'));
       const entries = await fs.readdir(targetPath, { withFileTypes: true });
+      const history = store.get('history', []);
+
+      const exportedFolderSet = new Set(
+        history
+          .map((entry) => entry?.filePath)
+          .filter(Boolean)
+          .map((filePath) => path.normalize(path.dirname(filePath)))
+      );
 
       const folders = [];
       for (const entry of entries) {
@@ -253,7 +261,18 @@ app.whenReady().then(() => {
             // Zugriffsfehler -> vermutlich nicht ready
             isReady = false;
           }
-          folders.push({ name: entry.name, path: fullPath, isReady });
+
+          const normalizedFolderPath = path.normalize(fullPath);
+          const wasExportedHere = exportedFolderSet.has(normalizedFolderPath);
+          const folderState = !isReady ? 'busy' : (wasExportedHere ? 'done' : 'ready');
+
+          folders.push({
+            name: entry.name,
+            path: fullPath,
+            isReady,
+            wasExportedHere,
+            folderState,
+          });
         }
       }
 
