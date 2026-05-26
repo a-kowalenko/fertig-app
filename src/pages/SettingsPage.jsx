@@ -146,7 +146,7 @@ export default function SettingsPage() {
         )}
 
         <p className="text-sm text-gray-500 mb-6">
-          Dieser Pfad wird verwendet, wenn der Dialog zum Speichern der "_fertig.txt" geöffnet wird.
+          Dieser Pfad wird als Startverzeichnis beim Auswählen des Zielordners für "_fertig.txt" verwendet.
         </p>
 
 

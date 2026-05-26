@@ -11,6 +11,20 @@ const __dirname = path.dirname(__filename);
 
 const store = new Store();
 
+const EXPORT_MARKER_FILES = ['_fertig.txt', '_inverarbeitung.txt'];
+
+async function getFolderBlockReason(folderPath) {
+  for (const name of EXPORT_MARKER_FILES) {
+    try {
+      await fs.access(path.join(folderPath, name));
+      return name;
+    } catch {
+      // Datei nicht vorhanden
+    }
+  }
+  return null;
+}
+
 function getChannelFromVersion(version) {
   const prerelease = version?.split('-')[1];
   if (!prerelease) return '';
@@ -228,14 +242,6 @@ app.whenReady().then(() => {
     try {
       const targetPath = dirPath || store.get('defaultPath', app.getPath('documents'));
       const entries = await fs.readdir(targetPath, { withFileTypes: true });
-      const history = store.get('history', []);
-
-      const exportedFolderSet = new Set(
-        history
-          .map((entry) => entry?.filePath)
-          .filter(Boolean)
-          .map((filePath) => path.normalize(path.dirname(filePath)))
-      );
 
       const folders = [];
       for (const entry of entries) {
@@ -244,16 +250,19 @@ app.whenReady().then(() => {
           // Check ob Kopiervorgang aktiv ist (hier sehr simpel: checken ob Dateien kürzlich (letzte 2s) geändert wurden,
           // besser wäre noch ein lock-check, aber für eine generische Lösung reicht oft das Änderungsdatum)
           let isReady = true;
+          let blockReason = null;
           try {
             const files = await fs.readdir(fullPath, { withFileTypes: true });
             const now = Date.now();
             for (const f of files) {
               if (f.isFile()) {
+                if (EXPORT_MARKER_FILES.includes(f.name)) {
+                  blockReason = f.name;
+                }
                 const s = await fs.stat(path.join(fullPath, f.name));
                 // Wenn letse Änderung jünger als 3 Sekunden ist -> wir nehmen an, Kopiervorgang aktiv
                 if (now - s.mtimeMs < 3000) {
                   isReady = false;
-                  break;
                 }
               }
             }
@@ -262,15 +271,13 @@ app.whenReady().then(() => {
             isReady = false;
           }
 
-          const normalizedFolderPath = path.normalize(fullPath);
-          const wasExportedHere = exportedFolderSet.has(normalizedFolderPath);
-          const folderState = !isReady ? 'busy' : (wasExportedHere ? 'done' : 'ready');
+          const folderState = !isReady ? 'busy' : (blockReason ? 'occupied' : 'ready');
 
           folders.push({
             name: entry.name,
             path: fullPath,
             isReady,
-            wasExportedHere,
+            blockReason,
             folderState,
           });
         }
@@ -289,6 +296,14 @@ app.whenReady().then(() => {
 
     const person = persons[personIndex];
     const filePath = path.join(targetPath, '_fertig.txt');
+
+    const blockReason = await getFolderBlockReason(targetPath);
+    if (blockReason) {
+      return {
+        success: false,
+        error: `Export nicht möglich: Im Ordner existiert bereits „${blockReason}“.`,
+      };
+    }
 
     try {
       const exportData = {
@@ -340,6 +355,14 @@ app.whenReady().then(() => {
 
     const selectedPath = result.filePaths[0];
     const filePath = path.join(selectedPath, '_fertig.txt');
+
+    const blockReason = await getFolderBlockReason(selectedPath);
+    if (blockReason) {
+      return {
+        success: false,
+        error: `Export nicht möglich: Im Ordner existiert bereits „${blockReason}“.`,
+      };
+    }
 
     try {
       const exportData = {
@@ -420,6 +443,14 @@ app.whenReady().then(() => {
 
     const selectedPath = result.filePaths[0];
     const filePath = path.join(selectedPath, '_fertig.txt');
+
+    const blockReason = await getFolderBlockReason(selectedPath);
+    if (blockReason) {
+      return {
+        success: false,
+        error: `Export nicht möglich: Im Ordner existiert bereits „${blockReason}“.`,
+      };
+    }
 
     try {
       const content = JSON.stringify(data, null, 2);

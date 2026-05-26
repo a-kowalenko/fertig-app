@@ -27,6 +27,7 @@ export default function PersonsPage() {
   const [exportingPersonId, setExportingPersonId] = useState(null);
   const [assignFolderMode, setAssignFolderMode] = useState(false);
   const [selectedFolderForAssign, setSelectedFolderForAssign] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const loadPersons = async () => {
     if (window.electronAPI) {
@@ -41,11 +42,14 @@ export default function PersonsPage() {
 
   const handleExport = async (id) => {
     if (!window.electronAPI) return;
+    setAssignFolderMode(false);
+    setSelectedFolderForAssign(null);
     setExportingPersonId(id);
   };
 
   const handleStartAssignFolder = () => {
     if (!window.electronAPI) return;
+    setExportingPersonId(null);
     setAssignFolderMode(true);
   };
 
@@ -55,8 +59,9 @@ export default function PersonsPage() {
   };
 
   const executeExportToAssignedFolder = async (personId) => {
-      if (!window.electronAPI || !selectedFolderForAssign) return;
+      if (!window.electronAPI || !selectedFolderForAssign || isExporting) return;
 
+      setIsExporting(true);
       try {
         const result = await window.electronAPI.exportPersonToPath({ id: personId, targetPath: selectedFolderForAssign });
         if (result.success) {
@@ -68,12 +73,15 @@ export default function PersonsPage() {
         }
       } catch (err) {
         toast.error(err.message);
+      } finally {
+        setIsExporting(false);
       }
   };
 
   const executeExport = async (folderPath) => {
-    if (!window.electronAPI || !exportingPersonId) return;
+    if (!window.electronAPI || !exportingPersonId || isExporting) return;
 
+    setIsExporting(true);
     try {
       const result = await window.electronAPI.exportPersonToPath({ id: exportingPersonId, targetPath: folderPath });
       if (result.success) {
@@ -85,6 +93,8 @@ export default function PersonsPage() {
       }
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -326,6 +336,7 @@ export default function PersonsPage() {
         <FolderSelectionModal
           onClose={() => setExportingPersonId(null)}
           onSelect={(folderPath) => executeExport(folderPath)}
+          isExporting={isExporting}
         />
       )}
 
@@ -334,6 +345,7 @@ export default function PersonsPage() {
         <FolderSelectionModal
           onClose={() => setAssignFolderMode(false)}
           onSelect={(folderPath) => onAssignFolderSelected(folderPath)}
+          isExporting={isExporting}
         />
       )}
 
@@ -343,6 +355,7 @@ export default function PersonsPage() {
           persons={persons}
           onClose={() => setSelectedFolderForAssign(null)}
           onSelect={(personId) => executeExportToAssignedFolder(personId)}
+          isExporting={isExporting}
         />
       )}
 

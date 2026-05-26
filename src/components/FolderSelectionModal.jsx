@@ -2,7 +2,7 @@
 import toast from 'react-hot-toast';
 import Button from './Button';
 
-export default function FolderSelectionModal({ onClose, onSelect }) {
+export default function FolderSelectionModal({ onClose, onSelect, isExporting = false }) {
   const [currentPath, setCurrentPath] = useState(null);
   const [folders, setFolders] = useState([]);
   const [parentPath, setParentPath] = useState(null);
@@ -37,13 +37,16 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
     return () => clearInterval(interval);
   }, [currentPath]);
 
+  const isFolderBlocked = (folder) =>
+    folder.folderState === 'occupied' || Boolean(folder.blockReason);
+
   const getRowColorClass = (folder) => {
     if (!folder.isReady || folder.folderState === 'busy') {
       return 'bg-red-100 border-gray-200 hover:bg-red-200';
     }
 
-    if (folder.wasExportedHere || folder.folderState === 'done') {
-      return 'bg-blue-100 border-blue-200 hover:bg-blue-200';
+    if (isFolderBlocked(folder)) {
+      return 'bg-blue-100 border-blue-200';
     }
 
     return 'bg-green-100 border-green-200 hover:bg-green-100';
@@ -51,8 +54,15 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
 
   const getIconColorClass = (folder) => {
     if (!folder.isReady || folder.folderState === 'busy') return 'text-red-500';
-    if (folder.wasExportedHere || folder.folderState === 'done') return 'text-blue-500';
+    if (isFolderBlocked(folder)) return 'text-blue-500';
     return 'text-green-500';
+  };
+
+  const getSaveButtonTitle = (folder) => {
+    if (isExporting) return 'Export läuft…';
+    if (!folder.isReady) return 'Ordner wird noch beschrieben';
+    if (folder.blockReason) return `Belegt durch ${folder.blockReason}`;
+    return 'Export in diesen Ordner';
   };
 
   return (
@@ -103,7 +113,8 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
                   <Button
                     variant="success"
                     onClick={() => onSelect(f.path)}
-                    disabled={!f.isReady}
+                    disabled={!f.isReady || isFolderBlocked(f) || isExporting}
+                    title={getSaveButtonTitle(f)}
                     className="text-xs px-3 py-1 ml-2"
                   >
                     Hier speichern
@@ -123,7 +134,7 @@ export default function FolderSelectionModal({ onClose, onSelect }) {
         <div className="flex justify-between items-center pt-2">
             <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="inline-block w-3 h-3 bg-green-100 border border-green-200 rounded"></span> = Bereit
-                <span className="inline-block w-3 h-3 bg-blue-100 border border-blue-200 rounded ml-2"></span> = Bereits exportiert
+                <span className="inline-block w-3 h-3 bg-blue-100 border border-blue-200 rounded ml-2"></span> = Belegt (_fertig.txt / _inverarbeitung.txt)
                 <span className="inline-block w-3 h-3 bg-red-100 border border-gray-200 rounded ml-2"></span> = Wird geschrieben
             </div>
             <Button

@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import Button from './Button';
 
-export default function PersonSelectionModal({ persons, onClose, onSelect }) {
+export default function PersonSelectionModal({ persons, onClose, onSelect, isExporting = false }) {
   const [search, setSearch] = useState('');
 
   const filteredPersons = persons.filter(p => {
@@ -52,6 +52,7 @@ export default function PersonSelectionModal({ persons, onClose, onSelect }) {
                   </div>
                   <Button
                     onClick={() => onSelect(p.id)}
+                    disabled={isExporting}
                     className="text-sm px-4 py-1.5 ml-2"
                   >
                     Auswählen & Exportieren
