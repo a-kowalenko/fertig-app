@@ -237,6 +237,18 @@ app.whenReady().then(() => {
     return { success: true };
   });
 
+  ipcMain.handle('set-person-processed', (event, { id, processed }) => {
+    const persons = store.get('persons', []);
+    const index = persons.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return { success: false, error: 'Kunde nicht gefunden' };
+    }
+
+    persons[index].processed = Boolean(processed);
+    store.set('persons', persons);
+    return { success: true };
+  });
+
   // Neue API für Dateisystem
   ipcMain.handle('read-directory', async (event, dirPath) => {
     try {

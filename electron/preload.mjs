@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPersons: () => ipcRenderer.invoke('get-persons'),
   updatePerson: (data) => ipcRenderer.invoke('update-person', data),
   deletePerson: (id) => ipcRenderer.invoke('delete-person', id),
+  setPersonProcessed: (data) => ipcRenderer.invoke('set-person-processed', data),
   exportPerson: (id) => ipcRenderer.invoke('export-person', id),
   readDirectory: (path) => ipcRenderer.invoke('read-directory', path),
   exportPersonToPath: (data) => ipcRenderer.invoke('export-person-to-path', data),
