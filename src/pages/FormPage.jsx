@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
@@ -35,13 +35,87 @@ function parseCustomerJsonPaste(text) {
   }
 }
 
+async function readClipboardText() {
+  if (window.electronAPI?.readClipboardText) {
+    return window.electronAPI.readClipboardText();
+  }
+
+  if (navigator.clipboard?.readText && document.hasFocus()) {
+    return navigator.clipboard.readText();
+  }
+
+  return '';
+}
+
+function applyCustomerData(parsed, setValue) {
+  const fieldOptions = { shouldValidate: true, shouldTouch: true };
+  setValue('vorname', parsed.vorname, fieldOptions);
+  setValue('nachname', parsed.nachname, fieldOptions);
+  setValue('email', parsed.email, fieldOptions);
+  setValue('telefon', parsed.telefon, fieldOptions);
+}
+
+function hasAnyFormInput(values) {
+  return ['vorname', 'nachname', 'email', 'telefon'].some(
+    (field) => values[field]?.trim()
+  );
+}
+
 export default function FormPage() {
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, touchedFields } } = useForm({
     mode: 'onTouched',
-    reValidateMode: 'onChange'
+    reValidateMode: 'onChange',
+    defaultValues: {
+      vorname: '',
+      nachname: '',
+      email: '',
+      telefon: '',
+    },
   });
 
+  const formValues = watch();
   const telefonValue = watch('telefon');
+  const hasFormInput = hasAnyFormInput(formValues);
+  const [clipboardCustomer, setClipboardCustomer] = useState(null);
+  const lastAppliedClipboardRef = useRef('');
+
+  const checkClipboard = useCallback(async () => {
+    try {
+      const text = await readClipboardText();
+      const trimmedText = text.trim();
+      const parsed = parseCustomerJsonPaste(trimmedText);
+
+      if (parsed && trimmedText !== lastAppliedClipboardRef.current) {
+        setClipboardCustomer(parsed);
+      } else {
+        setClipboardCustomer(null);
+      }
+    } catch {
+      setClipboardCustomer(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkClipboard();
+
+    const handleFocus = () => checkClipboard();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkClipboard();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const interval = setInterval(checkClipboard, 1000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [checkClipboard]);
 
   const onSubmit = async (data) => {
     let loadingToastId;
@@ -61,6 +135,7 @@ export default function FormPage() {
         const result = await window.electronAPI.savePerson(payload);
         if (result.success) {
           toast.success('Person erfolgreich zur Warteschlange hinzugefügt!');
+          lastAppliedClipboardRef.current = '';
           reset();
         } else {
           toast.error(`Fehler beim Hinzufügen der Person`);
@@ -68,6 +143,7 @@ export default function FormPage() {
       } else {
         toast.error('Electron API nicht verfügbar. (Browser Modus?)');
         console.log('Daten:', payload);
+        lastAppliedClipboardRef.current = '';
         reset();
       }
     } catch (err) {
@@ -76,25 +152,71 @@ export default function FormPage() {
   };
 
   const handleFormPaste = (e) => {
-    const parsed = parseCustomerJsonPaste(e.clipboardData.getData('text'));
+    const text = e.clipboardData.getData('text');
+    const parsed = parseCustomerJsonPaste(text);
     if (!parsed) return;
 
     e.preventDefault();
+    applyCustomerData(parsed, setValue);
+    lastAppliedClipboardRef.current = text.trim();
+    setClipboardCustomer(null);
+  };
 
-    const fieldOptions = { shouldValidate: true, shouldTouch: true };
-    setValue('vorname', parsed.vorname, fieldOptions);
-    setValue('nachname', parsed.nachname, fieldOptions);
-    setValue('email', parsed.email, fieldOptions);
-    setValue('telefon', parsed.telefon, fieldOptions);
+  const handleInsertFromClipboard = async () => {
+    if (!clipboardCustomer) return;
+
+    try {
+      const text = await readClipboardText();
+      const trimmedText = text.trim();
+      const parsed = parseCustomerJsonPaste(trimmedText);
+      if (!parsed) {
+        setClipboardCustomer(null);
+        return;
+      }
+
+      applyCustomerData(parsed, setValue);
+      lastAppliedClipboardRef.current = trimmedText;
+      setClipboardCustomer(null);
+    } catch {
+      setClipboardCustomer(null);
+    }
+  };
+
+  const handleReset = () => {
+    reset();
+    lastAppliedClipboardRef.current = '';
+    checkClipboard();
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto w-full relative">
+    <div
+      className="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto w-full relative"
+      onMouseEnter={checkClipboard}
+    >
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Kunde aufnehmen</h2>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} onPaste={handleFormPaste} className="space-y-4">
+      {clipboardCustomer && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-3">
+          <p className="text-sm text-blue-800">
+            Kundendaten in Zwischenablage:{' '}
+            <span className="font-medium">
+              {clipboardCustomer.vorname} {clipboardCustomer.nachname}
+            </span>
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleInsertFromClipboard}
+            className="shrink-0 text-sm py-1.5 px-3"
+          >
+            Einfügen
+          </Button>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} onPaste={handleFormPaste} onFocus={checkClipboard} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Vorname *</label>
           <input
@@ -166,6 +288,17 @@ export default function FormPage() {
         >
           Kunde anlegen
         </Button>
+
+        {hasFormInput && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleReset}
+            className="w-full"
+          >
+            Zurücksetzen
+          </Button>
+        )}
       </form>
     </div>
   );

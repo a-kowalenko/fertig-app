@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -149,6 +149,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('get-app-version', () => {
     return app.getVersion();
+  });
+
+  ipcMain.handle('read-clipboard-text', () => {
+    return clipboard.readText();
   });
 
   ipcMain.handle('get-app-meta', () => {

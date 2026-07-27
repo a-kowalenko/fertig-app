@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  readClipboardText: () => ipcRenderer.invoke('read-clipboard-text'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getAppMeta: () => ipcRenderer.invoke('get-app-meta'),
   getLatestVersionInfo: () => ipcRenderer.invoke('get-latest-version-info'),
