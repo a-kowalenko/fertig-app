@@ -1,10 +1,42 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
 
+function parseCustomerJsonPaste(text) {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{')) return null;
+
+  try {
+    const data = JSON.parse(trimmed);
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) return null;
+
+    const vorname = data.vorname;
+    const nachname = data.name ?? data.nachname;
+    const email = data.email;
+    const telefon = data.telefon;
+
+    if (
+      typeof vorname !== 'string' ||
+      typeof nachname !== 'string' ||
+      typeof email !== 'string'
+    ) {
+      return null;
+    }
+
+    return {
+      vorname: vorname.trim(),
+      nachname: nachname.trim(),
+      email: email.trim(),
+      telefon: typeof telefon === 'string' ? telefon.trim() : '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function FormPage() {
-  const { register, handleSubmit, reset, watch, formState: { errors, touchedFields } } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, touchedFields } } = useForm({
     mode: 'onTouched',
     reValidateMode: 'onChange'
   });
@@ -43,13 +75,26 @@ export default function FormPage() {
     }
   };
 
+  const handleFormPaste = (e) => {
+    const parsed = parseCustomerJsonPaste(e.clipboardData.getData('text'));
+    if (!parsed) return;
+
+    e.preventDefault();
+
+    const fieldOptions = { shouldValidate: true, shouldTouch: true };
+    setValue('vorname', parsed.vorname, fieldOptions);
+    setValue('nachname', parsed.nachname, fieldOptions);
+    setValue('email', parsed.email, fieldOptions);
+    setValue('telefon', parsed.telefon, fieldOptions);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto w-full relative">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Kunde aufnehmen</h2>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} onPaste={handleFormPaste} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Vorname *</label>
           <input
