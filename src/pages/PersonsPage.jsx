@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import FolderSelectionModal from '../components/FolderSelectionModal';
 import PersonSelectionModal from '../components/PersonSelectionModal';
 import Button from '../components/Button';
+import Pagination from '../components/Pagination';
 
 export default function PersonsPage() {
   const [persons, setPersons] = useState([]);
@@ -209,6 +210,11 @@ export default function PersonsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentItems = filteredPersons.slice(startIndex, startIndex + itemsPerPage);
 
+  const exportingPerson = persons.find(p => p.id === exportingPersonId);
+  const exportingCustomerLabel = exportingPerson
+    ? `${exportingPerson.vorname} ${exportingPerson.nachname}`.trim()
+    : undefined;
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md max-w-full mx-auto w-full">
       <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-6 gap-4">
@@ -351,40 +357,14 @@ export default function PersonsPage() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-gray-600">
-            Zeige {startIndex + 1} bis {Math.min(startIndex + itemsPerPage, filteredPersons.length)} von {filteredPersons.length} Einträgen
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 rounded border text-sm font-medium transition-colors ${currentPage === 1 ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-            >
-              Zurück
-            </button>
-            <div className="flex gap-1">
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-8 h-8 rounded border text-sm font-medium transition-colors ${currentPage === i + 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded border text-sm font-medium transition-colors ${currentPage === totalPages ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-            >
-              Nächste
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        startIndex={startIndex}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredPersons.length}
+      />
 
       {/* Mode 1: Click person -> Select folder -> Export */}
       {exportingPersonId && (
@@ -392,6 +372,7 @@ export default function PersonsPage() {
           onClose={() => setExportingPersonId(null)}
           onSelect={(folderPath) => executeExport(folderPath)}
           isExporting={isExporting}
+          customerLabel={exportingCustomerLabel}
         />
       )}
 

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import Pagination from '../components/Pagination';
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([]);
@@ -93,40 +94,14 @@ export default function HistoryPage() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-gray-600">
-            Zeige {startIndex + 1} bis {Math.min(startIndex + itemsPerPage, filteredHistory.length)} von {filteredHistory.length} Einträgen
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 rounded border text-sm font-medium transition-colors ${currentPage === 1 ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-            >
-              Zurück
-            </button>
-            <div className="flex gap-1">
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-8 h-8 rounded border text-sm font-medium transition-colors ${currentPage === i + 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded border text-sm font-medium transition-colors ${currentPage === totalPages ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-            >
-              Nächste
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        startIndex={startIndex}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredHistory.length}
+      />
     </div>
   );
 }

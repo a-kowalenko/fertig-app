@@ -2,7 +2,7 @@
 import toast from 'react-hot-toast';
 import Button from './Button';
 
-export default function FolderSelectionModal({ onClose, onSelect, isExporting = false }) {
+export default function FolderSelectionModal({ onClose, onSelect, isExporting = false, customerLabel }) {
   const [currentPath, setCurrentPath] = useState(null);
   const [folders, setFolders] = useState([]);
   const [parentPath, setParentPath] = useState(null);
@@ -76,6 +76,12 @@ export default function FolderSelectionModal({ onClose, onSelect, isExporting = 
             </svg>
           </button>
         </div>
+
+        {customerLabel && (
+          <p className="text-sm text-gray-600 mb-3">
+            Export für: <span className="font-medium text-gray-800">{customerLabel}</span>
+          </p>
+        )}
 
         <div className="mb-2 text-sm font-mono text-gray-500 bg-gray-50 px-3 py-2 rounded break-all">
           {currentPath || 'Lade...'}
